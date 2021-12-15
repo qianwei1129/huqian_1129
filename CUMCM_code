@@ -1,4 +1,4 @@
-%% 多元线性回归的代码
+%% 多元线性回归
 %% 读取的x是自变量
 %% 读取的y是因变量
 clear
@@ -8,6 +8,8 @@ data=xlsread('example1_2_1.xlsx');
 X=data(:,3:n);
 Y=data(:,2);
 xishu=regression(Y,X);
+
+
 
 function xishu=regression(Y,X)
 if nargin < 2                           %当输入变量个数< 2 时，提示至少需要输入两个变量
@@ -80,4 +82,142 @@ for i = 1:size(t.beta,1)
 end
 fprintf('\n');
 xishu=t.beta;
+end
+
+
+
+
+
+
+
+
+
+
+%% 共线性诊断
+%% 读取的x是自变量
+%% 读取的y是因变量
+clear
+clc
+data=xlsread('example1_2_1.xlsx');
+[m,n]=size(data);
+X=data(:,3:n);
+Y=data(:,2);
+xishu=gongxianxing(Y,X);
+
+function xishu=gongxianxing(Y,X)
+if nargin < 2
+    error('至少需要两个输入参数');
+end
+[n,p]=size(X);
+[n2,p2]=size(Y);
+
+if n2~=n
+    error('自变量与因变量观测量不统一');
+end
+
+if p2~=1
+    error('因变量个数必须为一')
+end
+
+xg=corr(X);                     %相关系数
+[v1,v2]=eig(corr(X));           %计算特征向量和以特征值为对角元素的对角阵
+[~,m]=sort(sum(v2),'descend');  %对特征值降序排列
+v3=v1(:,m);
+tezheng=sort(v2(find(v2)),'descend');
+gongxian=v3.^2./(tezheng(:,ones(1,p))');              %计算贡献率
+ljgongxian=(gongxian./repmat(sum(gongxian,2),1,p))';  %计算累积贡献率
+
+for i=1:p                           %计算条件指数
+    tiaojian(i)=sqrt(tezheng(1)/tezheng(i));
+end
+
+%共线性诊断
+fprintf('-------------------------共线性诊断----------------------------');
+fprintf('\n');
+fprintf('%5s%7s%10s','序号','特征值','条件指数');
+for i=1:p
+    fprintf('%11s',strcat('X',num2str(i)));
+end
+fprintf('\n');
+for i=1:p
+    fprintf('%5s%12.4f%12.4f%3s',num2str(i),tezheng(i),tiaojian(i),'');
+    for j=1:p
+    fprintf('%11.4f',ljgongxian(i,j));
+    end
+fprintf('\n');
+end
+fprintf('\n');
+xishu=tezheng;
+end
+
+
+
+
+
+
+
+
+
+%% 计算简单相关统计量及相关系数矩阵
+%% 读取的x是自变量
+%% 读取的y是因变量
+clear
+clc
+data=xlsread('example1_2_1.xlsx');
+[m,n]=size(data);
+X=data(:,3:n);
+Y=data(:,2);
+xishu=jiandan(Y,X);
+
+
+
+function xishu=jiandan(Y,X)
+if nargin < 2
+    error('至少需要两个输入参数');
+end
+[n,p]=size(X);
+[n2,p2]=size(Y);
+
+if n2~=n
+    error('自变量与因变量观测量不统一');
+end
+
+if p2~=1
+    error('因变量个数必须为一')
+end
+
+xg=corr(X); %相关系数
+mx=mean(X); %计算平均值
+my=mean(Y);
+stdx=std(X,0); %计算标准差
+stdy=std(Y,0); 
+varnames = strcat({'X'},num2str([1:p]'));
+
+% 显示简单统计量
+fprintf('---------简单统计量---------');
+fprintf('\n');
+fprintf('%s%10s%10s','变量','均值','标准差');
+fprintf('\n');
+for i=1:p
+    fprintf('%3s%13.4f%12.4f\n',varnames{i},mx(i),stdx(i));
+    
+end
+fprintf('\n');
+
+%相关系数
+fprintf('-------------------------相关矩阵--------------------------');
+fprintf('\n');
+for i=1:p
+    fprintf('%12s',strcat('X',num2str(i)));
+end
+fprintf('\n');
+for i=1:p
+    fprintf('%s',strcat('X',num2str(i)));
+    for j=1:p
+        fprintf('%12.4f',xg(i,j));
+    end
+    fprintf('\n');
+end
+fprintf('\n');
+xishu=mx;
 end
