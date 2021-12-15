@@ -1,3 +1,6 @@
+%% 多元线性回归的代码
+%% 读取的x是自变量
+%% 读取的y是因变量
 clear
 clc
 data=xlsread('example1_2_1.xlsx');
@@ -5,8 +8,6 @@ data=xlsread('example1_2_1.xlsx');
 X=data(:,3:n);
 Y=data(:,2);
 xishu=regression(Y,X);
-
-
 
 function xishu=regression(Y,X)
 if nargin < 2                           %当输入变量个数< 2 时，提示至少需要输入两个变量
