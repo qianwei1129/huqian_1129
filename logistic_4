@@ -1,0 +1,32 @@
+%% 此代码用于患者性别与治疗方法两种变量对治疗有效的分析
+clc,clear
+sex=[1 1 0 0]';       %患者性别
+treat=[1 0 1 0]';     %治疗方法
+X=[sex treat];        %自变量
+marked=[16 6 5 1]';   %治疗显效的病例数
+some=[5 7 2 0]';      %治疗显效的病例数
+n=[6 19 7 10]';       %治疗的合计病例数
+Y=[marked some n];    %因变量
+[B,dev,stats]=mnrfit(X,Y,'model','ordinal','link','logit');
+%% 参数估计结果
+fprintf('\n-------------------------------参数估计结果-----------------------------\n');
+fprintf('%3s%12s%9s%13s%10s%11s\n','参数','自由度','估计值','标准误差','t值','p值');
+fprintf('%3s%10.0f%15.4f%15.4f%13.4f%12.4f\n','常数项1',1,stats.beta(1),stats.se(1),stats.t(1),stats.p(1));
+fprintf('%3s%10.0f%15.4f%15.4f%13.4f%12.4f\n','常数项2',1,stats.beta(2),stats.se(2),stats.t(2),stats.p(2));
+fprintf('%6s%11.0f%15.4f%15.4f%13.4f%12.4f\n','sex',1,stats.beta(3),stats.se(3),stats.t(2),stats.p(3));    
+fprintf('%6s%11.0f%15.4f%15.4f%13.4f%12.4f\n','treat',1,stats.beta(4),stats.se(4),stats.t(3),stats.p(4));
+
+%预测
+yf1=exp(B(3,:));  %sex
+lower1=exp(B(3,:)-norminv(0.975,0,1)*stats.se(3,:));
+upper1=exp(B(3,:)+norminv(0.975,0,1)*stats.se(3,:));
+
+yf2=exp(B(4,:));  %degree
+lower2=exp(B(4,:)-norminv(0.975,0,1)*stats.se(4,:));
+upper2=exp(B(4,:)+norminv(0.975,0,1)*stats.se(4,:));
+
+%% OR点估计和区间估计
+fprintf('\n---------------OR点估计和区间估计---------------\n');
+fprintf('%3s%10s%17s\n','效应','点估计','置信区间');
+fprintf('%3s%13.4f%10s%1.4f%1s%1.4f%1s\n','性别',yf1,'[ ',lower1,' , ',upper1,' ]');
+fprintf('%3s%13.4f%10s%1.4f%1s%1.4f%1s\n','程度',yf2,'[ ',lower2,' , ',upper2,' ]');
