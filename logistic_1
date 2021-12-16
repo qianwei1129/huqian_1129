@@ -1,0 +1,53 @@
+%% 此代码用于logistic回归_不同的治疗方法对于某病疗效的影响（第四次课）
+%% 将治疗方法与对应的有效病例数输入，即可分析两者之间的关系
+clc,clear
+treat=[1 2]';       %治疗方法
+effect=[16 40]';    %传统组和新法组分别治疗有效的病例数
+n=[64 60]';         %传统组和新法组分别治疗的合计病例数
+%%只含常数项的logsitc模型拟合
+b0 = fitglm(treat,[effect n],'constant','Distribution','binomial','link','logit');
+%计算AIC,BIC，-2对数似然
+AIC0=b0.ModelCriterion.AIC;
+BIC0=b0.ModelCriterion.BIC;
+LL0=-2*b0.LogLikelihood;
+%%含常数项的logsitc模型拟合
+b1= fitglm(treat,[effect n],'linear','Distribution','binomial','link','logit');
+AIC1=b1.ModelCriterion.AIC;
+BIC1=b1.ModelCriterion.BIC;
+LL1=-2*b1.LogLikelihood;
+%%%%%%检验
+%%似然比检验
+LR=LL0-LL1;
+p2=1-chi2cdf(LR, 1);
+%Wald检验
+wald=b1.Coefficients.tStat(2)^2;
+p3=1-chi2cdf(wald, 1);
+
+%%预测
+yf1=exp(b1.Coefficients.Estimate(2,:));  %treat的OR点估计
+lower1=exp(b1.Coefficients.Estimate(2,:)-norminv(0.975,0,1)*b1.Coefficients.SE(2,:)); %置信区间的下限
+upper1=exp(b1.Coefficients.Estimate(2,:)+norminv(0.975,0,1)*b1.Coefficients.SE(2,:));  %置信区间的上限
+
+% 模型拟合检验表
+fprintf('\n------------模型拟合检验表----------\n');
+fprintf('%3s%10s%10s\n','准则','只含常数项','含治疗方法');
+fprintf('%5s%14.4f%12.4f\n','AIC',AIC0,AIC1);
+fprintf('%5s%14.4f%12.4f\n','BIC',BIC0,BIC1);
+fprintf('%5s%13.4f%12.4f\n','-2logL',LL0,LL1);
+
+%% 似然比检验和Wald检验
+fprintf('\n-------------似然比和Wald检验表-----------\n');
+fprintf('%3s%10s%10s%9s\n','检验','卡方','自由度','p值');
+fprintf('%3s%14.4f%8.0f%13.4f\n','似然比',LR,1,p2);
+fprintf('%5s%15.4f%8.0f%13.4f\n','Wald',wald,1,p3);
+
+%% 参数估计结果
+fprintf('\n-------------------------------参数估计结果-----------------------------\n');
+fprintf('%3s%10s%10s%10s%10s%13s\n','参数','自由度','估计值','标准误差','t值','p值');
+fprintf('%3s%10.0f%14.4f%15.4f%13.4f%12.4f\n','常数项',1,b1.Coefficients.Estimate(1),b1.Coefficients.SE(1),b1.Coefficients.tStat(1),b1.Coefficients.pValue(1));  
+fprintf('%3s%11.0f%14.4f%15.4f%13.4f%12.4f\n','treat',1,b1.Coefficients.Estimate(2),b1.Coefficients.SE(2),b1.Coefficients.tStat(2),b1.Coefficients.pValue(2));    
+                         
+%% OR点估计和区间估计
+fprintf('\n---------------OR点估计和区间估计---------------\n');
+fprintf('%3s%10s%17s\n','效应','点估计','置信区间');
+fprintf('%3s%13.4f%10s%1.4f%1s%1.4f%1s\n','treat',yf1,'[ ',lower1,' , ',upper1,' ]');
