@@ -1,0 +1,80 @@
+%% 此代码用于患者性别与治疗有效病例数的回归分析
+clc,clear  
+sex=[1 1 1 0 0 0]';         %患者性别
+treata=[1 0 0 1 0 0]';      %治疗方法A
+treatb=[0 1 0 0 1 0]';      %治疗方法B
+cured=[78 101 68 40 54 34]';  %治疗有效的病例数
+n=[106 112 114 45 59 40]';     %治疗的合计病例数
+%%只含常数项的logsitc模型拟合
+b0 = fitglm([sex treata treatb],[cured n],'constant','Distribution','binomial','link','logit');
+%计算AIC,SC，-2对数似然
+AIC0=b0.ModelCriterion.AIC;
+BIC0=b0.ModelCriterion.BIC;
+LL0=-2*b0.LogLikelihood;
+%%含线性项的logsitc模型拟合
+b1= fitglm([sex treata treatb],[cured n],'linear','Distribution','binomial','link','logit');
+AIC1=b1.ModelCriterion.AIC;
+BIC1=b1.ModelCriterion.BIC;
+LL1=-2*b1.LogLikelihood;
+%%%%%%检验
+%%似然比检验
+LR=LL0-LL1 ;
+p2=1-chi2cdf(LR, 3);
+%Wald检验
+wald=b1.Coefficients.tStat(2)^2+b1.Coefficients.tStat(3)^2++b1.Coefficients.tStat(4)^2;
+p3=1-chi2cdf(wald, 3);
+
+%deviance检验
+deviance=sum((b1.Residuals.Deviance).^2);  %deviance
+p1=1-chi2cdf(deviance, b1.DFE);
+
+%pearson检验
+pearson=sum((b1.Residuals.Pearson).^2); %pearson
+p=1-chi2cdf(pearson, b1.DFE);
+
+%%预测
+yf1=exp(b1.Coefficients.Estimate(2,:));  %dsex的OR点估计
+lower1=exp(b1.Coefficients.Estimate(2,:)-norminv(0.975,0,1)*b1.Coefficients.SE(2,:));
+upper1=exp(b1.Coefficients.Estimate(2,:)+norminv(0.975,0,1)*b1.Coefficients.SE(2,:));
+
+yf2=exp(b1.Coefficients.Estimate(3,:));  %treata的OR点估计
+lower2=exp(b1.Coefficients.Estimate(3,:)-norminv(0.975,0,1)*b1.Coefficients.SE(3,:));
+upper2=exp(b1.Coefficients.Estimate(3,:)+norminv(0.975,0,1)*b1.Coefficients.SE(3,:));
+
+yf3=exp(b1.Coefficients.Estimate(4,:));  %treatb的OR点估计
+lower3=exp(b1.Coefficients.Estimate(4,:)-norminv(0.975,0,1)*b1.Coefficients.SE(4,:));
+upper3=exp(b1.Coefficients.Estimate(4,:)+norminv(0.975,0,1)*b1.Coefficients.SE(4,:));
+
+%% 模型拟合优度检验表
+fprintf('\n-------------------模型拟合优度检验表------------------\n');
+fprintf('%3s%10s%10s%10s%8s\n','准则','值','自由度','值/自由度','p值');
+fprintf('%3s%13.4f%8.0f%15.4f%12.4f\n','偏差',deviance,b1.DFE,deviance/b1.DFE,p1);
+fprintf('%3s%11.4f%8.0f%15.4f%12.4f\n','Pearson',pearson,b1.DFE,pearson/b1.DFE,p);
+
+
+%% 模型拟合检验表
+fprintf('\n------------模型拟合检验表----------\n');
+fprintf('%3s%10s%10s\n','准则','只含常数项','含性别和程度');
+fprintf('%5s%14.4f%12.4f\n','AIC',AIC0,AIC1);
+fprintf('%5s%14.4f%12.4f\n','BIC',BIC0,BIC1);
+fprintf('%5s%13.4f%12.4f\n','-2logL',LL0,LL1);
+
+%% 似然比和Wald检验
+fprintf('\n-------------似然比和Wald检验表-----------\n');
+fprintf('%3s%10s%10s%9s\n','检验','卡方','自由度','p值');
+fprintf('%3s%14.4f%8.0f%13.4f\n','似然比',LR,3,p2);
+fprintf('%5s%15.4f%8.0f%13.4f\n','Wald',wald,3,p3);
+
+%% 参数估计结果
+fprintf('\n-------------------------------参数估计结果-----------------------------\n');
+fprintf('%3s%10s%8s%12s%10s%11s\n','参数','自由度','估计值','标准误差','t值','p值');
+fprintf('%3s%10.0f%12.4f%15.4f%13.4f%12.4f\n','常数项',1,b1.Coefficients.Estimate(1),b1.Coefficients.SE(1),b1.Coefficients.tStat(1),b1.Coefficients.pValue(1));  
+fprintf('%5s%11.0f%12.4f%15.4f%13.4f%12.4f\n','sex',1,b1.Coefficients.Estimate(2),b1.Coefficients.SE(2),b1.Coefficients.tStat(2),b1.Coefficients.pValue(2));    
+fprintf('%3s%10.0f%12.4f%15.4f%13.4f%12.4f\n','treata',1,b1.Coefficients.Estimate(3),b1.Coefficients.SE(3),b1.Coefficients.tStat(3),b1.Coefficients.pValue(3));                          
+fprintf('%3s%10.0f%12.4f%15.4f%13.4f%12.4f\n','treatb',1,b1.Coefficients.Estimate(4),b1.Coefficients.SE(4),b1.Coefficients.tStat(4),b1.Coefficients.pValue(4)); 
+%% OR点估计和区间估计
+fprintf('\n-----------------OR点估计和区间估计-----------------\n');
+fprintf('%3s%10s%17s\n','效应','点估计','置信区间');
+fprintf('%3s%14.4f%10s%1.4f%1s%1.4f%1s\n','sex',yf1,'[ ',lower1,' , ',upper1,' ]');
+fprintf('%3s%11.4f%10s%1.4f%1s%1.4f%1s\n','treata',yf2,'[ ',lower2,' , ',upper2,' ]');
+fprintf('%3s%11.4f%10s%1.4f%1s%1.4f%1s\n','treatb',yf3,'[ ',lower3,' , ',upper3,' ]');
